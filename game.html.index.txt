@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pyramid Runner</title>
+  <style>
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #222;
+    }
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pyramid Runner</h1>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const player = {
+      x: 50,
+      y: 300,
+      width: 30,
+      height: 30,
+      color: 'gold',
+      dy: 0,
+      gravity: 0.7,
+      jumpForce: -12,
+      isJumping: false
+    };
+
+    const ground = 350;
+    const keys = {};
+    const gold = [];
+    const monster = { x: -100, y: 300, width: 40, height: 40, color: 'red' };
+    let gameOver = false;
+
+    // Create gold coins
+    for (let i = 0; i < 10; i++) {
+      gold.push({
+        x: 200 + i * 150,
+        y: 320,
+        width: 15,
+        height: 15,
+        collected: false
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      keys[e.code] = false;
+    });
+
+    function drawRect(obj) {
+      ctx.fillStyle = obj.color || 'white';
+      ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+    }
+
+    function drawGold() {
+      ctx.fillStyle = 'yellow';
+      gold.forEach(g => {
+        if (!g.collected) {
+          ctx.beginPath();
+          ctx.arc(g.x, g.y, g.width / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      // Player movement
+      if (keys['Space'] && !player.isJumping) {
+        player.dy = player.jumpForce;
+        player.isJumping = true;
+      }
+
+      player.dy += player.gravity;
+      player.y += player.dy;
+
+      if (player.y > ground - player.height) {
+        player.y = ground - player.height;
+        player.dy = 0;
+        player.isJumping = false;
+      }
+
+      // Move monster toward player
+      monster.x += 1.5;
+      if (monster.x > player.x - 10 && monster.x < player.x + player.width) {
+        gameOver = true;
+      }
+
+      // Check for gold collection
+      gold.forEach(g => {
+        if (!g.collected &&
+          player.x < g.x + g.width &&
+          player.x + player.width > g.x &&
+          player.y < g.y + g.height &&
+          player.y + player.height > g.y
+        ) {
+          g.collected = true;
+        }
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw ground
+      ctx.fillStyle = '#555';
+      ctx.fillRect(0, ground, canvas.width, 50);
+
+      // Draw player
+      drawRect(player);
+
+      // Draw monster
+      drawRect(monster);
+
+      // Draw gold
+      drawGold();
+
+      // Draw score
+      const collected = gold.filter(g => g.collected).length;
+      ctx.fillStyle = 'white';
+      ctx.fillText(`Gold collected: ${collected}`, 10, 20);
+
+      if (gameOver) {
+        ctx.fillStyle = 'red';
+        ctx.font = '40px sans-serif';
+        ctx.fillText('Game Over!', 300, 200);
+      }
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      if (!gameOver) requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
